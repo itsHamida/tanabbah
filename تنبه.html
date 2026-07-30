@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>تنبّه – تنبه في الالتزام حتى لا تتاخر في الازدحام</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    * { font-family: 'Tajawal', sans-serif; }
+    body { transition: background 0.3s, color 0.3s; }
+    .page { display: none; }
+    .page.active { display: block; }
+    .card { background: white; border-radius: 1rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); padding: 1.5rem; }
+    .dark .card { background: #1f2937; color: #e5e7eb; }
+    .dark .card input, .dark .card select { background: #374151; border-color: #4b5563; color: #e5e7eb; }
+    .sidebar-link { transition: 0.2s; cursor: pointer; }
+    .sidebar-link.active { background: #f97316; color: white; }
+    .dark .sidebar-link:hover:not(.active) { background: #374151; }
+    .btn-primary { background: #1e3a8a; color: white; padding: 0.5rem 1.5rem; border-radius: 0.5rem; transition: 0.2s; }
+    .btn-primary:hover { background: #1e40af; }
+    .btn-secondary { background: #f97316; color: white; padding: 0.5rem 1.5rem; border-radius: 0.5rem; transition: 0.2s; }
+    .btn-secondary:hover { background: #ea580c; }
+    .btn-danger { background: #dc2626; color: white; padding: 0.5rem 1.5rem; border-radius: 0.5rem; transition: 0.2s; }
+    .btn-danger:hover { background: #b91c1c; }
+    .tab-btn { padding: 0.5rem 1.5rem; border-bottom: 3px solid transparent; transition: 0.2s; cursor: pointer; }
+    .tab-btn.active { border-bottom-color: #f97316; color: #f97316; font-weight: bold; }
+    @media (max-width: 768px) {
+      .sidebar { position: fixed; top: 4rem; right: -100%; width: 280px; height: calc(100vh - 4rem); transition: right 0.3s; z-index: 50; background: white; box-shadow: -4px 0 10px rgba(0,0,0,0.1); overflow-y: auto; }
+      .dark .sidebar { background: #1f2937; }
+      .sidebar.open { right: 0; }
+      .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 40; top: 4rem; }
+      .sidebar-overlay.open { display: block; }
+    }
+    .app-container { height: calc(100vh - 4rem); }
+    .main-content { overflow-y: auto; }
+    .appointment-item { border-bottom: 1px solid #e5e7eb; padding: 0.75rem 0; }
+    .dark .appointment-item { border-color: #374151; }
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; }
+    .modal.open { display: flex; }
+    .modal-content { background: white; border-radius: 1rem; padding: 2rem; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto; }
+    .dark .modal-content { background: #1f2937; color: #e5e7eb; }
+    .dark .modal-content input, .dark .modal-content select { background: #374151; border-color: #4b5563; color: #e5e7eb; }
+    .logo-img { height: 40px; width: auto; max-width: 150px; object-fit: contain; }
+    .logo-hero { height: 100px; width: auto; max-width: 270px; object-fit: contain; }
+  </style>
+</head>
+<body class="bg-slate-50 text-gray-800 dark:bg-gray-900 dark:text-gray-200">
+
+  <!-- الشريط العلوي -->
+  <nav class="bg-blue-900 dark:bg-gray-800 p-4 shadow-md flex justify-between items-center sticky top-0 z-50 h-16">
+    <div class="flex items-center gap-4">
+      <button id="menuBtn" class="text-white md:hidden">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      
+      <!-- ================================================ -->
+      <!--  مكان الشعار - ضع رابط صورتك هنا                -->
+      <!-- ================================================ -->
+      <div class="flex items-center gap-2">
+        <!-- 
+          ⬇️ استبدل الرابط أدناه برابط شعارك 
+          يمكنك رفع الصورة على أي موقع واستخدام الرابط هنا
+        -->
+        <img src="https://h.top4top.io/p_3862xsfxm1.png" 
+             alt="شعار تنبّه" 
+             class="logo-img" 
+             onerror="this.style.display='none'" />
+        <!-- 
+          في حال عدم ظهور الصورة، سيظهر النص البديل أدناه
+        -->
+        <span class="text-white text-2xl font-bold hidden md:inline">تنبّه</span>
+      </div>
+      <!-- ================================================ -->
+      
+    </div>
+    <div class="flex items-center gap-3">
+      <button id="themeToggle" class="text-white">
+        <svg id="themeIcon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+      </button>
+      <span id="authStatus" class="text-white hidden md:inline"></span>
+      <button id="authBtn" class="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition">دخول</button>
+    </div>
+  </nav>
+
+  <!-- الحاوية الرئيسية -->
+  <div class="app-container flex flex-col md:flex-row relative">
+    <div id="sidebarOverlay" class="sidebar-overlay"></div>
+
+    <!-- الشريط الجانبي -->
+    <aside id="sidebar" class="sidebar md:relative md:right-0 md:w-64 md:block md:shadow-none bg-white dark:bg-gray-800 p-4 shadow-md overflow-y-auto flex-shrink-0">
+      <ul class="space-y-2">
+        <li><a data-page="dashboard" class="sidebar-link active flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1h-2z"/></svg>لوحة التحكم</a></li>
+        <li><a data-page="add" class="sidebar-link flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>إضافة موعد</a></li>
+        <li><a data-page="ai" class="sidebar-link flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>المساعد الذكي</a></li>
+        <li><a data-page="checklist" class="sidebar-link flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>قائمة الاستعداد</a></li>
+        <li><a data-page="reports" class="sidebar-link flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>التقارير</a></li>
+        <li><a data-page="settings" class="sidebar-link flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>الإعدادات</a></li>
+      </ul>
+    </aside>
+
+    <!-- المحتوى الرئيسي -->
+    <main class="main-content flex-1 p-6 pt-2 overflow-y-auto">
+
+      <!-- الصفحة الرئيسية مع الشعار -->
+      <div id="page-home" class="page active">
+        <div class="max-w-4xl mx-auto text-center">
+          <!-- ============================================== -->
+          <!--  الشعار في الصفحة الرئيسية (أكبر حجماً)        -->
+          <!-- ============================================== -->
+          <div class="flex justify-center mb-4">
+            <img src="https://h.top4top.io/p_3862xsfxm1.png" 
+                 alt="شعار تنبّه" 
+                 class="logo-hero" 
+                 onerror="this.style.display='none'" />
+          </div>
+          <!-- في حال عدم ظهور الصورة، يظهر النص -->
+          <h1 class="text-5xl font-bold text-blue-900 dark:text-white mt-2 hidden">تنبّه</h1>
+          <h1 class="text-5xl font-bold text-blue-900 dark:text-white mt-2">تنبّه</h1>
+          <p class="text-xl text-gray-600 dark:text-gray-300 mt-2">تنبه في الالتزام حتى لا تتاخر في الازدحام</p>
+          <button id="startBtn" class="mt-4 bg-orange-500 text-white px-8 py-3 rounded-full text-lg shadow-lg hover:scale-105 transition">ابدأ الآن</button>
+          <div class="grid md:grid-cols-3 gap-8 mt-8 text-right">
+            <div class="card"><svg class="w-12 h-12 text-orange-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg><h3 class="text-xl font-semibold mt-4">تذكيرات ذكية</h3><p>تنبيهات قبل الموعد بناءً على وقت الاستعداد والطريق.</p></div>
+            <div class="card"><svg class="w-12 h-12 text-orange-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><h3 class="text-xl font-semibold mt-4">إدارة الوقت</h3><p>احسب وقت الخروج المثالي وتجنب الازدحام.</p></div>
+            <div class="card"><svg class="w-12 h-12 text-orange-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg><h3 class="text-xl font-semibold mt-4">خرائط وطرق</h3><p>تكامل مع خرائط جوجل لتقدير زمن الرحلة.</p></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- صفحة تسجيل الدخول -->
+      <div id="page-login" class="page">
+        <div class="max-w-md mx-auto mt-4">
+          <div class="card">
+            <div class="flex justify-center gap-4 border-b dark:border-gray-700 pb-2">
+              <button id="loginTab" class="tab-btn active">تسجيل الدخول</button>
+              <button id="registerTab" class="tab-btn">إنشاء حساب</button>
+            </div>
+            <div id="loginForm" class="mt-6 space-y-4">
+              <input type="email" id="loginEmail" placeholder="البريد الإلكتروني" class="w-full p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600" />
+              <input type="password" id="loginPassword" placeholder="كلمة المرور" class="w-full p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600" />
+              <button id="loginSubmit" class="btn-secondary w-full">تسجيل الدخول</button>
+              <div class="relative my-4"><div class="absolute inset-0 flex items-center"><div class="w-full border-t border-gray-300 dark:border-gray-600"></div></div><div class="relative flex justify-center text-sm"><span class="px-2 bg-white dark:bg-gray-800 text-gray-500">أو</span></div></div>
+              <button id="googleLogin" class="w-full border border-gray-300 dark:border-gray-600 py-3 rounded-lg flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                <svg class="w-5 h-5" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                <span>تسجيل بواسطة Google</span>
+              </button>
+              <p id="loginError" class="text-red-500 text-sm text-center hidden"></p>
+            </div>
+            <div id="registerForm" class="mt-6 space-y-4 hidden">
+              <input type="text" id="registerName" placeholder="الاسم الكامل" class="w-full p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600" />
+              <input type="email" id="registerEmail" placeholder="البريد الإلكتروني" class="w-full p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600" />
+              <input type="password" id="registerPassword" placeholder="كلمة المرور (6 أحرف على الأقل)" class="w-full p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600" />
+              <input type="password" id="registerConfirm" placeholder="تأكيد كلمة المرور" class="w-full p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600" />
+              <button id="registerSubmit" class="btn-secondary w-full">إنشاء حساب</button>
+              <p id="registerError" class="text-red-500 text-sm text-center hidden"></p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- لوحة التحكم -->
+      <div id="page-dashboard" class="page">
+        <h2 class="text-3xl font-bold text-blue-900 dark:text-white">لوحة التحكم</h2>
+        <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mt-4">
+          <div class="card flex items-center gap-4"><svg class="w-10 h-10 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg><div><p class="text-sm text-gray-500 dark:text-gray-400">مواعيد اليوم</p><p class="text-2xl font-bold" id="todayCount">0</p></div></div>
+          <div class="card flex items-center gap-4"><svg class="w-10 h-10 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><div><p class="text-sm text-gray-500 dark:text-gray-400">الوقت المتبقي</p><p class="text-2xl font-bold" id="totalRemaining">0:00</p></div></div>
+          <div class="card flex items-center gap-4"><svg class="w-10 h-10 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg><div><p class="text-sm text-gray-500 dark:text-gray-400">تنبيهات قادمة</p><p class="text-2xl font-bold" id="upcomingAlerts">0</p></div></div>
+          <div class="card flex items-center gap-4"><svg class="w-10 h-10 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg><div><p class="text-sm text-gray-500 dark:text-gray-400">الالتزام</p><p class="text-2xl font-bold" id="commitmentRate">0%</p></div></div>
+        </div>
+        <div class="mt-6 card">
+          <h3 class="text-xl font-semibold">📅 مواعيد اليوم</h3>
+          <ul id="todayList" class="mt-4 divide-y divide-gray-200 dark:divide-gray-700"></ul>
+        </div>
+        <div class="mt-6 card">
+          <h3 class="text-xl font-semibold">📋 جميع المواعيد</h3>
+          <ul id="allAppointmentsList" class="mt-4 divide-y divide-gray-200 dark:divide-gray-700"></ul>
+        </div>
+      </div>
+
+      <!-- إضافة موعد -->
+      <div id="page-add" class="page">
+        <div class="max-w-2xl mx-auto"><h2 class="text-3xl font-bold text-blue-900 dark:text-white">إضافة موعد</h2>
+          <form id="appointmentForm" class="mt-4 card space-y-4">
+            <input type="text" id="appName" placeholder="اسم الموعد" required class="w-full p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600" />
+            <div class="grid md:grid-cols-2 gap-4">
+              <input type="date" id="appDate" required class="p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600" />
+              <input type="time" id="appTime" required class="p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600" />
+            </div>
+            <input type="text" id="appMapLink" placeholder="رابط خرائط جوجل (اختياري)" class="w-full p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600" />
+            <select id="appTransport" class="w-full p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600"><option>سيارة</option><option>مترو</option><option>حافلة</option><option>مشياً</option></select>
+            <select id="appImportance" class="w-full p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600"><option>منخفض</option><option>متوسط</option><option>عالي</option></select>
+            <button type="submit" class="btn-secondary w-full">حفظ الموعد</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- المساعد الذكي -->
+      <div id="page-ai" class="page">
+        <div class="max-w-3xl mx-auto">
+          <h2 class="text-3xl font-bold text-blue-900 dark:text-white">🤖 المساعد الذكي</h2>
+          <p class="text-gray-600 dark:text-gray-300 mt-1">اختر موعداً من القائمة، وحدد وقت التجهيز، وسيحسب لك وقت الخروج المثالي.</p>
+          <div id="aiAppointmentsList" class="mt-4 space-y-4"></div>
+        </div>
+      </div>
+
+      <!-- قائمة الاستعداد -->
+      <div id="page-checklist" class="page">
+        <div class="max-w-2xl mx-auto"><h2 class="text-3xl font-bold text-blue-900 dark:text-white">قائمة الاستعداد</h2>
+          <div class="mt-4 card"><ul id="checklistItems" class="space-y-3"></ul>
+            <div class="mt-4 flex gap-2"><input type="text" id="newItemInput" placeholder="أضف غرضاً جديداً" class="flex-1 p-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600" /><button id="addItemBtn" class="btn-primary">أضف</button></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- التقارير -->
+      <div id="page-reports" class="page">
+        <h2 class="text-3xl font-bold text-blue-900 dark:text-white">التقارير</h2>
+        <div class="grid md:grid-cols-3 gap-6 mt-4">
+          <div class="card text-center"><p class="text-gray-500 dark:text-gray-400">مرات الالتزام</p><p class="text-3xl font-bold text-green-500" id="onTimeCount">0</p></div>
+          <div class="card text-center"><p class="text-gray-500 dark:text-gray-400">مرات التأخير</p><p class="text-3xl font-bold text-red-500" id="lateCount">0</p></div>
+          <div class="card text-center"><p class="text-gray-500 dark:text-gray-400">نسبة الالتزام</p><p class="text-3xl font-bold text-orange-500" id="reportRate">0%</p></div>
+        </div>
+        <div class="mt-6 card"><p class="text-center text-gray-500 dark:text-gray-400">رسم بياني أسبوعي/شهري (سيُضاف لاحقاً)</p><div class="h-48 flex items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-600 rounded mt-4">[مكان الرسم البياني]</div></div>
+      </div>
+
+      <!-- الإعدادات -->
+      <div id="page-settings" class="page">
+        <div class="max-w-2xl mx-auto"><h2 class="text-3xl font-bold text-blue-900 dark:text-white">الإعدادات</h2>
+          <div class="mt-4 card space-y-4">
+            <div class="flex justify-between items-center"><span>الوضع الليلي</span><button id="settingsThemeToggle" class="btn-primary">تبديل</button></div>
+            <div class="flex justify-between items-center border-t pt-4 dark:border-gray-700"><span>اللغة</span><select class="p-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"><option>العربية</option><option>English</option></select></div>
+            <div class="flex justify-between items-center border-t pt-4 dark:border-gray-700"><span>الإشعارات</span><input type="checkbox" checked class="h-5 w-5" /></div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- نافذة تعديل الموعد -->
+  <div id="editModal" class="modal">
+    <div class="modal-content">
+      <h3 class="text-2xl font-bold mb-4">✏️ تعديل الموعد</h3>
+      <form id="editForm" class="space-y-4">
+        <input type="hidden" id="editIndex" />
+        <input type="text" id="editName" placeholder="اسم الموعد" required class="w-full p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600" />
+        <div class="grid md:grid-cols-2 gap-4">
+          <input type="date" id="editDate" required class="p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600" />
+          <input type="time" id="editTime" required class="p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600" />
+        </div>
+        <input type="text" id="editMapLink" placeholder="رابط خرائط جوجل" class="w-full p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600" />
+        <select id="editTransport" class="w-full p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600">
+          <option>سيارة</option><option>مترو</option><option>حافلة</option><option>مشياً</option>
+        </select>
+        <select id="editImportance" class="w-full p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600">
+          <option>منخفض</option><option>متوسط</option><option>عالي</option>
+        </select>
+        <div class="flex gap-3">
+          <button type="submit" class="btn-secondary flex-1">💾 حفظ التعديلات</button>
+          <button type="button" id="closeModal" class="btn-danger flex-1">إلغاء</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      // -------------------- الحالة العامة --------------------
+      let currentUser = localStorage.getItem('tanbeeh_user') || null;
+      let users = JSON.parse(localStorage.getItem('tanbeeh_users') || '[]');
+      let appointments = JSON.parse(localStorage.getItem('tanbeeh_appointments') || '[]');
+      let checklist = JSON.parse(localStorage.getItem('tanbeeh_checklist') || '["المفاتيح","المحفظة","الجوال","الشاحن"]');
+      let darkMode = localStorage.getItem('tanbeeh_theme') === 'dark';
+
+      // -------------------- دوال مساعدة --------------------
+      function saveAppointments() { localStorage.setItem('tanbeeh_appointments', JSON.stringify(appointments)); }
+      function saveChecklist() { localStorage.setItem('tanbeeh_checklist', JSON.stringify(checklist)); }
+      function saveUsers() { localStorage.setItem('tanbeeh_users', JSON.stringify(users)); }
+      function saveTheme() { localStorage.setItem('tanbeeh_theme', darkMode ? 'dark' : 'light'); }
+
+      function toggleTheme() {
+        darkMode = !darkMode;
+        document.documentElement.classList.toggle('dark', darkMode);
+        document.getElementById('themeIcon').innerHTML = darkMode ?
+          '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>' :
+          '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>';
+        saveTheme();
+      }
+
+      function updateAuthUI() {
+        const status = document.getElementById('authStatus');
+        const btn = document.getElementById('authBtn');
+        if (currentUser) {
+          status.textContent = 'مرحباً ' + currentUser;
+          status.classList.remove('hidden');
+          btn.textContent = 'تسجيل خروج';
+          btn.onclick = () => {
+            currentUser = null;
+            localStorage.removeItem('tanbeeh_user');
+            status.textContent = '';
+            status.classList.add('hidden');
+            btn.textContent = 'دخول';
+            btn.onclick = () => { showPage('login'); };
+            showPage('home');
+          };
+        } else {
+          status.textContent = '';
+          status.classList.add('hidden');
+          btn.textContent = 'دخول';
+          btn.onclick = () => { showPage('login'); };
+        }
+      }
+
+      function showPage(pageId) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        const target = document.getElementById('page-' + pageId);
+        if (target) target.classList.add('active');
+        document.querySelectorAll('.sidebar-link').forEach(link => {
+          link.classList.toggle('active', link.dataset.page === pageId);
+        });
+        document.getElementById('sidebar').classList.remove('open');
+        document.getElementById('sidebarOverlay').classList.remove('open');
+        if (pageId === 'dashboard') renderDashboard();
+        if (pageId === 'checklist') renderChecklist();
+        if (pageId === 'reports') renderReports();
+        if (pageId === 'ai') renderAIAssistant();
+        if (pageId === 'home') updateAuthUI();
+      }
+
+      // -------------------- المصادقة --------------------
+      function loginUser(email, password) {
+        const user = users.find(u => u.email === email && u.password === password);
+        if (user) {
+          currentUser = user.name;
+          localStorage.setItem('tanbeeh_user', currentUser);
+          updateAuthUI();
+          showPage('dashboard');
+          document.getElementById('loginError').classList.add('hidden');
+          return true;
+        } else {
+          document.getElementById('loginError').textContent = 'البريد الإلكتروني أو كلمة المرور غير صحيحة';
+          document.getElementById('loginError').classList.remove('hidden');
+          return false;
+        }
+      }
+
+      function registerUser(name, email, password, confirm) {
+        if (password.length < 6) {
+          document.getElementById('registerError').textContent = 'كلمة المرور يجب أن تكون 6 أحرف على الأقل';
+          document.getElementById('registerError').classList.remove('hidden');
+          return false;
+        }
+        if (password !== confirm) {
+          document.getElementById('registerError').textContent = 'كلمتا المرور غير متطابقتين';
+          document.getElementById('registerError').classList.remove('hidden');
+          return false;
+        }
+        if (users.find(u => u.email === email)) {
+          document.getElementById('registerError').textContent = 'البريد الإلكتروني مستخدم بالفعل';
+          document.getElementById('registerError').classList.remove('hidden');
+          return false;
+        }
+        users.push({ name, email, password });
+        saveUsers();
+        currentUser = name;
+        localStorage.setItem('tanbeeh_user', currentUser);
+        updateAuthUI();
+        showPage('dashboard');
+        document.getElementById('registerError').classList.add('hidden');
+        return true;
+      }
+
+      // -------------------- نافذة التعديل --------------------
+      function openEditModal(index) {
+        const app = appointments[index];
+        if (!app) return;
+        document.getElementById('editIndex').value = index;
+        document.getElementById('editName').value = app.name || '';
+        document.getElementById('editDate').value = app.date || '';
+        document.getElementById('editTime').value = app.time || '';
+        document.getElementById('editMapLink').value = app.mapLink || '';
+        document.getElementById('editTransport').value = app.transport || 'سيارة';
+        document.getElementById('editImportance').value = app.importance || 'متوسط';
+        document.getElementById('editModal').classList.add('open');
+      }
+
+      function closeEditModal() {
+        document.getElementById('editModal').classList.remove('open');
+      }
+
+      function saveEdit(e) {
+        e.preventDefault();
+        const index = parseInt(document.getElementById('editIndex').value);
+        if (isNaN(index) || index < 0 || index >= appointments.length) return;
+        appointments[index] = {
+          ...appointments[index],
+          name: document.getElementById('editName').value.trim(),
+          date: document.getElementById('editDate').value,
+          time: document.getElementById('editTime').value,
+          mapLink: document.getElementById('editMapLink').value.trim(),
+          transport: document.getElementById('editTransport').value,
+          importance: document.getElementById('editImportance').value,
+        };
+        saveAppointments();
+        closeEditModal();
+        renderDashboard();
+        renderAIAssistant();
+        alert('تم تحديث الموعد بنجاح!');
+      }
+
+      // -------------------- لوحة التحكم --------------------
+      function renderDashboard() {
+        const today = new Date().toISOString().split('T')[0];
+        const todayApps = appointments.filter(a => a.date === today);
+        document.getElementById('todayCount').textContent = todayApps.length;
+        let totalMin = 0;
+        todayApps.forEach(a => {
+          const [h, m] = a.time.split(':').map(Number);
+          const now = new Date();
+          const appDate = new Date(a.date + 'T' + a.time);
+          const diff = Math.floor((appDate - now) / 60000);
+          if (diff > 0) totalMin += diff;
+        });
+        const hrs = Math.floor(totalMin / 60);
+        const mins = totalMin % 60;
+        document.getElementById('totalRemaining').textContent = hrs + ':' + String(mins).padStart(2,'0') + ' س';
+        document.getElementById('upcomingAlerts').textContent = todayApps.length > 0 ? Math.min(todayApps.length, 3) : 0;
+        const rate = appointments.length > 0 ? Math.round((appointments.filter(a => a.attended !== false).length / appointments.length) * 100) : 0;
+        document.getElementById('commitmentRate').textContent = rate + '%';
+        
+        const todayList = document.getElementById('todayList');
+        todayList.innerHTML = '';
+        if (todayApps.length === 0) {
+          todayList.innerHTML = '<li class="py-2 text-gray-500 dark:text-gray-400">لا توجد مواعيد اليوم</li>';
+        } else {
+          todayApps.sort((a, b) => a.time.localeCompare(b.time));
+          todayApps.forEach((a, idx) => {
+            const originalIndex = appointments.indexOf(a);
+            const li = document.createElement('li');
+            li.className = 'py-3 flex justify-between items-center border-b dark:border-gray-700';
+            li.innerHTML = `
+              <span>${a.name}</span>
+              <div class="flex items-center gap-3">
+                <span class="text-orange-500">${a.time}</span>
+                <button onclick="window.editAppointment(${originalIndex})" class="text-blue-500 hover:text-blue-700 text-sm">✏️ تعديل</button>
+              </div>
+            `;
+            todayList.appendChild(li);
+          });
+        }
+
+        const allList = document.getElementById('allAppointmentsList');
+        allList.innerHTML = '';
+        if (appointments.length === 0) {
+          allList.innerHTML = '<li class="py-2 text-gray-500 dark:text-gray-400">لا توجد مواعيد محفوظة</li>';
+        } else {
+          const sorted = [...appointments].sort((a, b) => {
+            if (a.date !== b.date) return a.date.localeCompare(b.date);
+            return a.time.localeCompare(b.time);
+          });
+          sorted.forEach((a) => {
+            const originalIndex = appointments.indexOf(a);
+            const li = document.createElement('li');
+            li.className = 'py-3 flex justify-between items-center border-b dark:border-gray-700';
+            li.innerHTML = `
+              <span>${a.name}</span>
+              <div class="flex items-center gap-3">
+                <span class="text-gray-500 dark:text-gray-400">${a.date} - ${a.time}</span>
+                <button onclick="window.editAppointment(${originalIndex})" class="text-blue-500 hover:text-blue-700 text-sm">✏️ تعديل</button>
+              </div>
+            `;
+            allList.appendChild(li);
+          });
+        }
+      }
+
+      window.editAppointment = openEditModal;
+
+      // -------------------- قائمة الاستعداد --------------------
+      function renderChecklist() {
+        const ul = document.getElementById('checklistItems');
+        ul.innerHTML = '';
+        checklist.forEach((item, index) => {
+          const li = document.createElement('li');
+          li.className = 'flex items-center gap-3';
+          const checked = item.checked ? 'checked' : '';
+          li.innerHTML = `
+            <input type="checkbox" ${checked} data-index="${index}" class="checklist-check h-5 w-5" />
+            <span class="${item.checked ? 'line-through text-gray-400' : ''}">${item.name}</span>
+            <button data-index="${index}" class="remove-item text-red-500 mr-auto">✕</button>
+          `;
+          ul.appendChild(li);
+        });
+        document.querySelectorAll('.checklist-check').forEach(cb => {
+          cb.addEventListener('change', function() {
+            const idx = parseInt(this.dataset.index);
+            checklist[idx].checked = this.checked;
+            saveChecklist();
+            renderChecklist();
+          });
+        });
+        document.querySelectorAll('.remove-item').forEach(btn => {
+          btn.addEventListener('click', function() {
+            const idx = parseInt(this.dataset.index);
+            checklist.splice(idx, 1);
+            saveChecklist();
+            renderChecklist();
+          });
+        });
+      }
+
+      // -------------------- التقارير --------------------
+      function renderReports() {
+        const total = appointments.length;
+        const onTime = appointments.filter(a => a.attended !== false).length;
+        const late = total - onTime;
+        document.getElementById('onTimeCount').textContent = onTime;
+        document.getElementById('lateCount').textContent = late;
+        document.getElementById('reportRate').textContent = total > 0 ? Math.round((onTime/total)*100) + '%' : '0%';
+      }
+
+      // -------------------- المساعد الذكي --------------------
+      function renderAIAssistant() {
+        const container = document.getElementById('aiAppointmentsList');
+        container.innerHTML = '';
+        if (appointments.length === 0) {
+          container.innerHTML = '<div class="card text-center text-gray-500 dark:text-gray-400">لا توجد مواعيد محفوظة. أضف موعداً أولاً.</div>';
+          return;
+        }
+        const sorted = [...appointments].sort((a, b) => {
+          if (a.date !== b.date) return a.date.localeCompare(b.date);
+          return a.time.localeCompare(b.time);
+        });
+        sorted.forEach((app, index) => {
+          const card = document.createElement('div');
+          card.className = 'card';
+          const mapLink = app.mapLink || '';
+          const travelTime = 30;
+          const prepTime = app.prepTime || 0;
+
+          card.innerHTML = `
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h4 class="text-lg font-semibold">${app.name}</h4>
+                <p class="text-sm text-gray-500 dark:text-gray-400">${app.date} - ${app.time}</p>
+                ${mapLink ? `<a href="${mapLink}" target="_blank" class="text-blue-500 text-sm hover:underline">📍 فتح الخريطة</a>` : ''}
+                <p class="text-sm">⏱️ مدة الطريق: ${travelTime} دقيقة (تقريبية)</p>
+              </div>
+              <div class="flex flex-col items-end gap-2">
+                <label class="text-sm">⏳ وقت التجهيز (دقيقة)</label>
+                <input type="number" id="prepTime_${index}" placeholder="مثل 15" class="w-24 p-1 border rounded dark:bg-gray-700" value="${prepTime || 15}" />
+                <button class="btn-secondary text-sm py-1 px-3 calculate-btn" data-index="${index}">🧮 احسب</button>
+              </div>
+            </div>
+            <div id="aiResult_${index}" class="mt-3 p-3 bg-green-100 dark:bg-green-900 rounded-lg text-center hidden">
+              <p class="font-bold">⏰ وقت الخروج المثالي: <span class="text-orange-500" id="bestTime_${index}"></span></p>
+              <p class="text-sm">يجب أن تغادر في هذا الوقت للوصول في الموعد المحدد.</p>
+            </div>
+          `;
+          container.appendChild(card);
+
+          card.querySelector('.calculate-btn').addEventListener('click', function() {
+            const idx = parseInt(this.dataset.index);
+            const appData = sorted[idx];
+            const prepInput = document.getElementById(`prepTime_${idx}`);
+            const prepValue = parseInt(prepInput.value) || 0;
+            appData.prepTime = prepValue;
+            saveAppointments();
+
+            const travelTime = 30;
+            const dateTimeStr = `${appData.date}T${appData.time}`;
+            const appointmentDate = new Date(dateTimeStr);
+            if (isNaN(appointmentDate.getTime())) {
+              alert('تاريخ الموعد غير صحيح');
+              return;
+            }
+            const trafficExtra = 10;
+            const totalMinutes = travelTime + prepValue + trafficExtra;
+            const leaveTime = new Date(appointmentDate.getTime() - totalMinutes * 60000);
+            const hours = String(leaveTime.getHours()).padStart(2, '0');
+            const minutes = String(leaveTime.getMinutes()).padStart(2, '0');
+            document.getElementById(`bestTime_${idx}`).textContent = `${hours}:${minutes}`;
+            document.getElementById(`aiResult_${idx}`).classList.remove('hidden');
+
+            const now = new Date();
+            const diff = leaveTime.getTime() - now.getTime();
+            if (diff < 0) {
+              alert('⏰ لقد فات وقت الخروج المثالي! حاول التحرك فوراً.');
+            } else {
+              const minsLeft = Math.floor(diff / 60000);
+              const hrsLeft = Math.floor(minsLeft / 60);
+              const minsRem = minsLeft % 60;
+              alert(`🔔 تذكير: حان وقت الاستعداد للخروج!\n⏳ الوقت المتبقي: ${hrsLeft} ساعة و ${minsRem} دقيقة.\n🕒 وقت الخروج المثالي: ${hours}:${minutes}`);
+            }
+          });
+        });
+      }
+
+      // -------------------- التهيئة والأحداث --------------------
+      function init() {
+        if (darkMode) {
+          document.documentElement.classList.add('dark');
+          document.getElementById('themeIcon').innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>';
+        }
+        updateAuthUI();
+
+        document.querySelectorAll('.sidebar-link').forEach(link => {
+          link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const page = link.dataset.page;
+            if (!currentUser && page !== 'home' && page !== 'login') {
+              alert('يرجى تسجيل الدخول أولاً');
+              showPage('login');
+              return;
+            }
+            showPage(page);
+          });
+        });
+
+        document.getElementById('menuBtn').addEventListener('click', () => {
+          document.getElementById('sidebar').classList.toggle('open');
+          document.getElementById('sidebarOverlay').classList.toggle('open');
+        });
+        document.getElementById('sidebarOverlay').addEventListener('click', () => {
+          document.getElementById('sidebar').classList.remove('open');
+          document.getElementById('sidebarOverlay').classList.remove('open');
+        });
+
+        document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+        document.getElementById('settingsThemeToggle').addEventListener('click', toggleTheme);
+
+        document.getElementById('startBtn').addEventListener('click', () => {
+          if (currentUser) showPage('dashboard');
+          else showPage('login');
+        });
+
+        document.getElementById('loginTab').addEventListener('click', function() {
+          document.getElementById('loginTab').classList.add('active');
+          document.getElementById('registerTab').classList.remove('active');
+          document.getElementById('loginForm').classList.remove('hidden');
+          document.getElementById('registerForm').classList.add('hidden');
+          document.getElementById('loginError').classList.add('hidden');
+          document.getElementById('registerError').classList.add('hidden');
+        });
+        document.getElementById('registerTab').addEventListener('click', function() {
+          document.getElementById('registerTab').classList.add('active');
+          document.getElementById('loginTab').classList.remove('active');
+          document.getElementById('registerForm').classList.remove('hidden');
+          document.getElementById('loginForm').classList.add('hidden');
+          document.getElementById('loginError').classList.add('hidden');
+          document.getElementById('registerError').classList.add('hidden');
+        });
+
+        document.getElementById('loginSubmit').addEventListener('click', function(e) {
+          e.preventDefault();
+          const email = document.getElementById('loginEmail').value.trim();
+          const password = document.getElementById('loginPassword').value.trim();
+          if (!email || !password) {
+            document.getElementById('loginError').textContent = 'يرجى ملء جميع الحقول';
+            document.getElementById('loginError').classList.remove('hidden');
+            return;
+          }
+          loginUser(email, password);
+        });
+
+        document.getElementById('googleLogin').addEventListener('click', function() {
+          const googleEmail = 'user@google.com';
+          const googleName = 'مستخدم Google';
+          if (!users.find(u => u.email === googleEmail)) {
+            users.push({ name: googleName, email: googleEmail, password: 'google123' });
+            saveUsers();
+          }
+          currentUser = googleName;
+          localStorage.setItem('tanbeeh_user', currentUser);
+          updateAuthUI();
+          showPage('dashboard');
+        });
+
+        document.getElementById('registerSubmit').addEventListener('click', function(e) {
+          e.preventDefault();
+          const name = document.getElementById('registerName').value.trim();
+          const email = document.getElementById('registerEmail').value.trim();
+          const password = document.getElementById('registerPassword').value.trim();
+          const confirm = document.getElementById('registerConfirm').value.trim();
+          if (!name || !email || !password || !confirm) {
+            document.getElementById('registerError').textContent = 'يرجى ملء جميع الحقول';
+            document.getElementById('registerError').classList.remove('hidden');
+            return;
+          }
+          registerUser(name, email, password, confirm);
+        });
+
+        document.getElementById('appointmentForm').addEventListener('submit', function(e) {
+          e.preventDefault();
+          const name = document.getElementById('appName').value.trim();
+          const date = document.getElementById('appDate').value;
+          const time = document.getElementById('appTime').value;
+          const mapLink = document.getElementById('appMapLink').value.trim();
+          const transport = document.getElementById('appTransport').value;
+          const importance = document.getElementById('appImportance').value;
+          if (!name || !date || !time) return alert('يرجى ملء الحقول الأساسية');
+          appointments.push({ 
+            name, date, time, mapLink, transport, importance, 
+            attended: true,
+            prepTime: 0
+          });
+          saveAppointments();
+          alert('تم حفظ الموعد بنجاح!');
+          this.reset();
+          if (currentUser) showPage('dashboard');
+        });
+
+        document.getElementById('editForm').addEventListener('submit', saveEdit);
+        document.getElementById('closeModal').addEventListener('click', closeEditModal);
+        document.getElementById('editModal').addEventListener('click', function(e) {
+          if (e.target === this) closeEditModal();
+        });
+
+        document.getElementById('addItemBtn').addEventListener('click', function() {
+          const input = document.getElementById('newItemInput');
+          const val = input.value.trim();
+          if (val) {
+            checklist.push({ name: val, checked: false });
+            saveChecklist();
+            renderChecklist();
+            input.value = '';
+          }
+        });
+        document.getElementById('newItemInput').addEventListener('keypress', function(e) {
+          if (e.key === 'Enter') document.getElementById('addItemBtn').click();
+        });
+
+        if (currentUser) showPage('dashboard');
+        else showPage('home');
+      }
+
+      document.addEventListener('DOMContentLoaded', init);
+    })();
+  </script>
+</body>
+</html>
